@@ -10,8 +10,8 @@ storage, accounts and tokens, and your scorer for spam.
 
 - an MX listener: recipients routed by your backend, one reply to DATA for every recipient
 - a submission listener: AUTH checked by your backend, STARTTLS required, sender checks
-- Authentication-Results and Received-SPF stripped from inbound mail, so a backend can't skip it, and a header
-  section over 256 KB refused
+- Authentication-Results and Received-SPF stripped from inbound mail, so a backend can't skip it
+- a header section over 256 KB refused on both listeners
 - loop detection on its own `Received:` stamps
 - forward-confirmed reverse DNS, started off the connection thread once the client has waited for the banner,
   in `Received:` and the envelope, with no more lookups at once than `max_connections`

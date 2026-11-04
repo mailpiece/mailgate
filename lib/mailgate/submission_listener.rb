@@ -75,6 +75,8 @@ module MailGate
     def receive(session, io)
       body = io.read
       refuse_a_leading_fold(body)
+      # Refuses a header section past its cap, as MX does.
+      HeaderSection.new(body)
 
       backend.submit(session.authorization_id, raw: body, received: received_header(session), envelope: envelope_of(session), key: submission_key(session, body))
 

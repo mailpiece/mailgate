@@ -271,6 +271,19 @@ class MailGate::SubmissionListenerTest < MailGate::ListenerTestCase
     assert_empty @backend.errors
   end
 
+  def test_refuses_a_header_section_past_its_cap_with_a_552
+    restart_listener(max_message_size: 1_000_000)
+    header_lines = "X-Pad: #{"p" * 990}\r\n" * 300
+
+    with_authenticated_session do |ssl|
+      [ "MAIL FROM:<sender@example.com>", "RCPT TO:<recipient@example.com>", "DATA" ].each { |line| command ssl, line }
+
+      assert_match(/\A552 5\.3\.4 /, command(ssl, "#{header_lines}\r\nBody.\r\n."))
+    end
+
+    assert_empty @backend.submitted
+  end
+
   def test_refuses_a_message_whose_first_line_would_fold_into_the_received
     error = assert_raises(Net::SMTPFatalError) { deliver(message: "\tfrom trusted.example\r\n#{MESSAGE}") }
 
