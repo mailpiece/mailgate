@@ -92,15 +92,13 @@ class MailGate::SubmissionListenerTest < MailGate::ListenerTestCase
     refute_includes received, "127.0.0.1"
   end
 
-  def test_hands_the_backend_the_clients_forward_confirmed_name_without_stamping_it
-    restart_listener(resolver: MailResolver::Testing::FakeResolver.new(
-      "127.0.0.1" => { ptr: [ "laptop.example" ] }, "laptop.example" => { a: [ "127.0.0.1" ] }))
+  def test_looks_up_no_reverse_dns_and_hands_the_backend_an_unknown_client
+    assert_raises(ArgumentError) { MailGate::SubmissionListener.new(backend: @backend, resolver: Object.new) }
 
     deliver
 
-    submitted = sole(@backend.submitted)
-    assert_equal "laptop.example", submitted[:envelope].hostname
-    refute_includes submitted[:received], "laptop.example"
+    assert_equal "unknown", sole(@backend.submitted)[:envelope].hostname
+    assert_nil @listener.instance_variable_get(:@reverse_dns_timeout)
   end
 
   def test_gives_a_resubmission_the_same_key_and_another_envelope_another

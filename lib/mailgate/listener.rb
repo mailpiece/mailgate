@@ -26,8 +26,6 @@ module MailGate
       max_session_duration: 300,
       pending_input_limit: PENDING_INPUT_LIMIT,
       max_junk_commands: 100,
-      resolver: nil,
-      reverse_dns_timeout: 5,
       greet_wait: nil,
       # A pause before each error reply past the soft limit, a 421 at the hard limit; the engine drops to one error under stress.
       error_sleep_time: 1,
@@ -51,7 +49,7 @@ module MailGate
     def initialize(backend:, hostname:, max_recipients:, read_timeout: DEFAULTS[:read_timeout],
       max_processings_wait: DEFAULTS[:max_processings_wait], max_session_duration: DEFAULTS[:max_session_duration],
       pending_input_limit: DEFAULTS[:pending_input_limit], max_junk_commands: DEFAULTS[:max_junk_commands],
-      resolver: DEFAULTS[:resolver], reverse_dns_timeout: DEFAULTS[:reverse_dns_timeout], greet_wait: DEFAULTS[:greet_wait],
+      resolver: nil, reverse_dns_timeout: nil, greet_wait: DEFAULTS[:greet_wait],
       error_sleep_time: DEFAULTS[:error_sleep_time], soft_error_limit: DEFAULTS[:soft_error_limit],
       hard_error_limit: DEFAULTS[:hard_error_limit], instrument: DEFAULTS[:instrument], **options)
       @backend = backend
@@ -83,10 +81,11 @@ module MailGate
     end
 
     # A client that talks before the banner never waited for it, as a real MTA does. Reverse DNS starts only once the
-    # client has waited, so one that talks first or leaves costs no lookup.
+    # client has waited, so one that talks first or leaves costs no lookup. Only MX has a timeout and looks one up, as
+    # submission's Received: never names the client.
     def before_banner(session, io)
       wait_for_greeting(session, io) if @greet_wait
-      look_up_reverse_dns(session) if session.remote_ip
+      look_up_reverse_dns(session) if @reverse_dns_timeout && session.remote_ip
     end
 
     def disconnected(session)

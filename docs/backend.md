@@ -108,7 +108,8 @@ At MAIL FROM, once for each message. True gets a 452.
 
 After DATA. Accept the message for sending and return once it is committed.
 
-- `envelope` is a `MailGate::Envelope`, as `store` gets it.
+- `envelope` is a `MailGate::Envelope`, as `store` gets it, but with `hostname` always `unknown`: submission
+  looks up no reverse DNS, as its `Received:` never names the client.
 - `raw` is the message as submitted, with an empty line before a first line that opens with a space or tab, as
   `store` gets it. Check the identity headers (From, Sender) here as well as the envelope sender.
 - `received` is mailgate's `Received:` line. Put it on top after removing the client's own `Received:`

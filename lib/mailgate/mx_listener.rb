@@ -11,6 +11,8 @@ module MailGate
       max_messages_per_ip: nil,
       # Long enough that a client that talks first shows itself.
       greet_wait: 6,
+      resolver: nil,
+      reverse_dns_timeout: 5,
       scorer: nil,
       # mailscore's own.
       scan_budget: 8
