@@ -80,8 +80,8 @@ The scorer raised. Return to store the message with no verdict, perhaps scoring 
 
 ## Submission
 
-`id` is what `authenticate` returned, as a String. At MAIL FROM, `account_active?`, `rate_limited?` and then
-`may_send_as?` run before any content is read.
+`id` is what `authenticate` returned, as a String. At MAIL FROM, `account_active?`, `may_send_as?` and then
+`rate_limited?` run before any content is read, so a sender refused costs no quota.
 
 ### `authenticate(username, password, ip:) → id or nil`
 

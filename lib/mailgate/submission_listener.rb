@@ -47,23 +47,21 @@ module MailGate
       end
     end
 
-    # The account is checked before any body is read.
+    # The account is checked before any body is read, and the sender before the rate, so a wrong address costs no quota.
     def mail_from(session, address)
       with_queue_id(session) do
         address = sender_in(address)
         id = session.authorization_id
 
         raise Errors::AccountInactive, "Account is not active" unless backend.account_active?(id)
+        raise Errors::SenderNotAuthorized, "Not authorized to send as #{address}" unless backend.may_send_as?(id, address)
+
         if backend.rate_limited?(id)
           instrument(:rate_limited, ip: session.remote_ip, limit: :account) if @instrument
           raise Errors::RateLimited, "Rate limit exceeded, try again shortly"
         end
 
-        if backend.may_send_as?(id, address)
-          address
-        else
-          raise Errors::SenderNotAuthorized, "Not authorized to send as #{address}"
-        end
+        address
       end
     end
 

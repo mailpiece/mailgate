@@ -241,6 +241,7 @@ class MailGate::SubmissionListenerTest < MailGate::ListenerTestCase
     with_authenticated_session do |ssl|
       @backend.inactive = true
       assert_match(/\A550 5\.7\.1 /, command(ssl, "MAIL FROM:<sender@example.com>"))
+      refute @backend.calls.assoc(:may_send_as?)
 
       @backend.inactive = false
       @backend.rate_limited = true
@@ -248,7 +249,18 @@ class MailGate::SubmissionListenerTest < MailGate::ListenerTestCase
     end
 
     assert_empty @backend.submitted
-    refute @backend.calls.assoc(:may_send_as?)
+  end
+
+  def test_checks_the_sender_before_counting_the_message_toward_the_rate_limit
+    with_authenticated_session do |ssl|
+      assert_match(/\A550 5\.7\.1 /, command(ssl, "MAIL FROM:<someone@else.example>"))
+      refute @backend.calls.assoc(:rate_limited?)
+
+      assert_match(/\A250/, command(ssl, "MAIL FROM:<sender@example.com>"))
+    end
+
+    assert_equal %i[ account_active? may_send_as? account_active? may_send_as? rate_limited? ],
+      @backend.calls.map(&:first).drop_while { |call| call != :account_active? }
   end
 
   def test_refuses_a_rate_limited_account_with_a_452
