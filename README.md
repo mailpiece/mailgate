@@ -10,11 +10,11 @@ storage, accounts and tokens, and your scorer for spam.
 
 - an MX listener: recipients routed by your backend, one reply to DATA for every recipient
 - a submission listener: AUTH checked by your backend, STARTTLS required, sender checks
-- Authentication-Results and Received-SPF stripped from inbound mail, so a backend can't skip it, and a header
-  section over 256 KB refused
+- Authentication-Results and Received-SPF stripped from inbound mail, so a backend can't skip it
+- a header section over 256 KB refused on both listeners
 - loop detection on its own `Received:` stamps
-- forward-confirmed reverse DNS, started off the connection thread once the client has waited for the banner,
-  in `Received:` and the envelope, with no more lookups at once than `max_connections`
+- forward-confirmed reverse DNS on MX, started off the connection thread once the client has waited for the
+  banner, in `Received:` and the envelope, with no more lookups at once than `max_connections`
 - a banner held back on MX, refusing a client that talks first
 - an error tarpit: a pause before each error reply past a soft limit, a 421 at the hard limit
 - every option but the backend has a default
@@ -104,7 +104,7 @@ Only `backend` is required. `nil` turns off the ones mailsmtp lets you turn off.
 | `port` | 25 | 587 | |
 | `max_message_size` | 10240000 | 10240000 | bytes, advertised as SIZE |
 | `max_recipients` | 1000 | 100 | per message; MX's is high so mail to many local recipients arrives in one transaction, and submission keeps mailsmtp's lower cap, so a leaked token reaches fewer people |
-| `max_connections` | 100 | 100 | open connections, and reverse DNS lookups at once, past which a client is `unknown` |
+| `max_connections` | 100 | 100 | open connections, and on MX reverse DNS lookups at once, past which a client is `unknown` |
 | `max_connections_per_ip` | 10 | 50 | open connections from one client, an IPv6 client counted by its /64, enforced by mailsmtp; MX's is a fifth of submission's, as nothing in front turns a flood away first |
 | `max_processings` | 10 | 10 | messages read at once; ten bodies in memory stay near 100 MB |
 | `max_processings_per_ip` | half of `max_processings` | half of `max_processings` | messages read at once from one client, an IPv6 client counted by its /64, at least 1; past it, mailsmtp answers DATA with a 451. Half, so one client holds at most half the slots |
@@ -123,8 +123,8 @@ Only `backend` is required. `nil` turns off the ones mailsmtp lets you turn off.
 | `error_sleep_time` | 1 | 1 | seconds slept before each error reply past `soft_error_limit` |
 | `soft_error_limit` | 10 | 10 | 4xx and 5xx replies per connection before the sleep starts |
 | `hard_error_limit` | 20 | 20 | replies per connection before a 421 and a hang-up, 1 under stress |
-| `reverse_dns_timeout` | 5 | 5 | seconds from the banner the reverse DNS lookup may take before the client is `unknown`; each query gets mailresolver's timeouts cut to what is left |
-| `resolver` | `nil` | `nil` | for reverse DNS, such as a fake zone in tests; `nil` is [mailresolver](https://github.com/mailpiece/mailresolver); used as it is, so it must answer within `reverse_dns_timeout` |
+| `reverse_dns_timeout` | 5 | — | seconds from the banner the reverse DNS lookup may take before the client is `unknown`; each query gets mailresolver's timeouts cut to what is left |
+| `resolver` | `nil` | — | for reverse DNS, such as a fake zone in tests; `nil` is [mailresolver](https://github.com/mailpiece/mailresolver); used as it is, so it must answer within `reverse_dns_timeout` |
 | `instrument` | `nil` | `nil` | a callable for [events](docs/instrument.md), as `instrument.call(event, **data)` |
 | `logger`, `logger_severity` | `nil` | `nil` | `nil` is mailsmtp's; as mailsmtp takes them |
 

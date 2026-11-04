@@ -24,8 +24,8 @@ module MailGate
     private
       def start(listener_class, **options)
         @port = free_port
-        @listener = listener_class.new(host: "127.0.0.1", port: @port, logger: Logger.new(nil),
-          resolver: MailResolver::Testing::FakeResolver.new, greet_wait: nil, **options).tap(&:start)
+        options = { resolver: MailResolver::Testing::FakeResolver.new, **options } if listener_class::DEFAULTS.key?(:resolver)
+        @listener = listener_class.new(host: "127.0.0.1", port: @port, logger: Logger.new(nil), greet_wait: nil, **options).tap(&:start)
       end
 
       def restart_listener(**overrides)

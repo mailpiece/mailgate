@@ -63,7 +63,8 @@ committed, and a sender can send the same message again on another connection.
 
 - `raw` is the message as received, with mailgate's `Received:` on top and every `Authentication-Results` and
   `Received-SPF` removed. `ARC-Authentication-Results` is kept, as ARC verification needs each forwarder's
-  sealed copy as it was sent.
+  sealed copy as it was sent. A message whose first line opens with a space or tab gets an empty line before it,
+  as in Postfix, so it is all body rather than a continuation of the `Received:`.
 - `digest` is a SHA-256 of the sender and the body, the same for a retry of the same message. Use it to store
   a retry once.
 - `envelope` is a `MailGate::Envelope`: `ip`, `hostname`, `helo`, `mail_from`, `rcpt_to`, `tls_version`,
@@ -79,8 +80,8 @@ The scorer raised. Return to store the message with no verdict, perhaps scoring 
 
 ## Submission
 
-`id` is what `authenticate` returned, as a String. At MAIL FROM, `account_active?`, `rate_limited?` and then
-`may_send_as?` run before any content is read.
+`id` is what `authenticate` returned, as a String. At MAIL FROM, `account_active?`, `may_send_as?` and then
+`rate_limited?` run before any content is read, so a sender refused costs no quota.
 
 ### `authenticate(username, password, ip:) → id or nil`
 
@@ -107,9 +108,10 @@ At MAIL FROM, once for each message. True gets a 452.
 
 After DATA. Accept the message for sending and return once it is committed.
 
-- `envelope` is a `MailGate::Envelope`, as `store` gets it.
-- `raw` is the message as submitted. Check the identity headers (From, Sender) here as well as the envelope
-  sender.
+- `envelope` is a `MailGate::Envelope`, as `store` gets it, but with `hostname` always `unknown`: submission
+  looks up no reverse DNS, as its `Received:` never names the client.
+- `raw` is the message as submitted, with an empty line before a first line that opens with a space or tab, as
+  `store` gets it. Check the identity headers (From, Sender) here as well as the envelope sender.
 - `received` is mailgate's `Received:` line. Put it on top after removing the client's own `Received:`
   headers.
 - `key` is a SHA-256 of the account's `id`, the envelope and the body. Use it so a resubmission of the same
