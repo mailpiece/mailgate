@@ -20,13 +20,13 @@ module MailGate
       stress_threshold: DEFAULTS[:stress_threshold], read_timeout: DEFAULTS[:read_timeout],
       max_processings_wait: DEFAULTS[:max_processings_wait], max_session_duration: DEFAULTS[:max_session_duration],
       pending_input_limit: DEFAULTS[:pending_input_limit], max_junk_commands: DEFAULTS[:max_junk_commands],
-      resolver: DEFAULTS[:resolver], reverse_dns_timeout: DEFAULTS[:reverse_dns_timeout], greet_wait: DEFAULTS[:greet_wait],
+      greet_wait: DEFAULTS[:greet_wait],
       error_sleep_time: DEFAULTS[:error_sleep_time], soft_error_limit: DEFAULTS[:soft_error_limit],
       hard_error_limit: DEFAULTS[:hard_error_limit], instrument: DEFAULTS[:instrument],
       logger: DEFAULTS[:logger], logger_severity: DEFAULTS[:logger_severity])
       super(backend:, hostname:, host:, port:, max_message_size:, max_recipients:, max_processings:, max_processings_per_ip:,
         max_connections:, max_connections_per_ip:, max_tls_sessions_per_ip:, max_auth_attempts_per_ip:, stress_threshold:,
-        read_timeout:, max_processings_wait:, max_session_duration:, pending_input_limit:, max_junk_commands:, resolver:, reverse_dns_timeout:, greet_wait:,
+        read_timeout:, max_processings_wait:, max_session_duration:, pending_input_limit:, max_junk_commands:, greet_wait:,
         error_sleep_time:, soft_error_limit:, hard_error_limit:, instrument:,
         logger:, logger_severity:,
         auth: :required,
@@ -47,23 +47,21 @@ module MailGate
       end
     end
 
-    # The account is checked before any body is read.
+    # The account is checked before any body is read, and the sender before the rate, so a wrong address costs no quota.
     def mail_from(session, address)
       with_queue_id(session) do
         address = sender_in(address)
         id = session.authorization_id
 
         raise Errors::AccountInactive, "Account is not active" unless backend.account_active?(id)
+        raise Errors::SenderNotAuthorized, "Not authorized to send as #{address}" unless backend.may_send_as?(id, address)
+
         if backend.rate_limited?(id)
           instrument(:rate_limited, ip: session.remote_ip, limit: :account) if @instrument
           raise Errors::RateLimited, "Rate limit exceeded, try again shortly"
         end
 
-        if backend.may_send_as?(id, address)
-          address
-        else
-          raise Errors::SenderNotAuthorized, "Not authorized to send as #{address}"
-        end
+        address
       end
     end
 
@@ -73,8 +71,9 @@ module MailGate
     end
 
     def receive(session, io)
-      body = io.read
-      refuse_a_leading_fold(body)
+      body = body_after_a_leading_fold(io.read)
+      # Refuses a header section past its cap, as MX does.
+      HeaderSection.new(body)
 
       backend.submit(session.authorization_id, raw: body, received: received_header(session), envelope: envelope_of(session), key: submission_key(session, body))
 

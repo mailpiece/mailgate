@@ -92,15 +92,13 @@ class MailGate::SubmissionListenerTest < MailGate::ListenerTestCase
     refute_includes received, "127.0.0.1"
   end
 
-  def test_hands_the_backend_the_clients_forward_confirmed_name_without_stamping_it
-    restart_listener(resolver: MailResolver::Testing::FakeResolver.new(
-      "127.0.0.1" => { ptr: [ "laptop.example" ] }, "laptop.example" => { a: [ "127.0.0.1" ] }))
+  def test_looks_up_no_reverse_dns_and_hands_the_backend_an_unknown_client
+    assert_raises(ArgumentError) { MailGate::SubmissionListener.new(backend: @backend, resolver: Object.new) }
 
     deliver
 
-    submitted = sole(@backend.submitted)
-    assert_equal "laptop.example", submitted[:envelope].hostname
-    refute_includes submitted[:received], "laptop.example"
+    assert_equal "unknown", sole(@backend.submitted)[:envelope].hostname
+    assert_nil @listener.instance_variable_get(:@reverse_dns_timeout)
   end
 
   def test_gives_a_resubmission_the_same_key_and_another_envelope_another
@@ -243,6 +241,7 @@ class MailGate::SubmissionListenerTest < MailGate::ListenerTestCase
     with_authenticated_session do |ssl|
       @backend.inactive = true
       assert_match(/\A550 5\.7\.1 /, command(ssl, "MAIL FROM:<sender@example.com>"))
+      refute @backend.calls.assoc(:may_send_as?)
 
       @backend.inactive = false
       @backend.rate_limited = true
@@ -250,7 +249,18 @@ class MailGate::SubmissionListenerTest < MailGate::ListenerTestCase
     end
 
     assert_empty @backend.submitted
-    refute @backend.calls.assoc(:may_send_as?)
+  end
+
+  def test_checks_the_sender_before_counting_the_message_toward_the_rate_limit
+    with_authenticated_session do |ssl|
+      assert_match(/\A550 5\.7\.1 /, command(ssl, "MAIL FROM:<someone@else.example>"))
+      refute @backend.calls.assoc(:rate_limited?)
+
+      assert_match(/\A250/, command(ssl, "MAIL FROM:<sender@example.com>"))
+    end
+
+    assert_equal %i[ account_active? may_send_as? account_active? may_send_as? rate_limited? ],
+      @backend.calls.map(&:first).drop_while { |call| call != :account_active? }
   end
 
   def test_refuses_a_rate_limited_account_with_a_452
@@ -271,11 +281,26 @@ class MailGate::SubmissionListenerTest < MailGate::ListenerTestCase
     assert_empty @backend.errors
   end
 
-  def test_refuses_a_message_whose_first_line_would_fold_into_the_received
-    error = assert_raises(Net::SMTPFatalError) { deliver(message: "\tfrom trusted.example\r\n#{MESSAGE}") }
+  def test_refuses_a_header_section_past_its_cap_with_a_552
+    restart_listener(max_message_size: 1_000_000)
+    header_lines = "X-Pad: #{"p" * 990}\r\n" * 300
 
-    assert_match "550 5.6.0", error.message
+    with_authenticated_session do |ssl|
+      [ "MAIL FROM:<sender@example.com>", "RCPT TO:<recipient@example.com>", "DATA" ].each { |line| command ssl, line }
+
+      assert_match(/\A552 5\.3\.4 /, command(ssl, "#{header_lines}\r\nBody.\r\n."))
+    end
+
     assert_empty @backend.submitted
+  end
+
+  def test_ends_the_header_section_before_a_first_line_that_would_fold_into_the_received
+    message = "\tfrom trusted.example\r\n#{MESSAGE}"
+
+    2.times { deliver(message:) }
+
+    assert_equal [ "\r\n#{message}" ] * 2, @backend.submitted.map { |submitted| submitted[:raw] }
+    assert_equal 1, @backend.submitted.map { |submitted| submitted[:key] }.uniq.size
   end
 
   def test_asks_the_sender_to_retry_on_any_other_error_and_reports_it

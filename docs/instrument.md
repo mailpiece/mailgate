@@ -22,7 +22,7 @@ credentials or account ids. `duration` is in seconds.
 |---|---|---|
 | `:connection_accepted` | both | `ip` |
 | `:pregreet_refused` | MX | `ip`; the client talked before the banner and got a 554 |
-| `:reverse_dns_finished` | both | `ip`, `outcome`, `duration`; sent when the message first needs the name |
+| `:reverse_dns_finished` | MX | `ip`, `outcome`, `duration`; sent when the message first needs the name |
 | `:scorer_finished` | MX | `ip`, `queue_id`, `action`, `score`, `duration`; `score` is nil for a verdict without one |
 | `:scorer_failed` | MX | `ip`, `queue_id`, `error`, `duration`; `error` is the class name |
 | `:message_accepted` | both | `ip`, `queue_id`, `bytes`, `recipients` |

@@ -11,6 +11,8 @@ module MailGate
       max_messages_per_ip: nil,
       # Long enough that a client that talks first shows itself.
       greet_wait: 6,
+      resolver: nil,
+      reverse_dns_timeout: 5,
       scorer: nil,
       # mailscore's own.
       scan_budget: 8
@@ -76,8 +78,7 @@ module MailGate
     end
 
     def receive(session, io)
-      body = io.read
-      refuse_a_leading_fold(body)
+      body = body_after_a_leading_fold(io.read)
       raise Errors::LoopDetected, "Loop detected" if looping?(body)
 
       raw = received_header(session) + AuthenticationResults.strip(body)
