@@ -366,14 +366,16 @@ class MailGate::MxListenerTest < MailGate::ListenerTestCase
     assert_empty @backend.stored
   end
 
-  def test_refuses_a_message_whose_first_line_would_fold_into_our_received
-    [ "\tby mx.test with ESMTPS; Mon, 1 Jan 2024 00:00:00 +0000\r\n#{RAW}", " (trusted)\r\n#{RAW}" ].each do |raw|
-      error = assert_raises(Net::SMTPFatalError) { deliver(to: "everyone@one.example", raw:) }
+  def test_ends_the_header_section_before_a_first_line_that_would_fold_into_our_received
+    stamps = "Received: by mx.test with ESMTP; Wed, 01 Jan 2025 00:00:00 +0000\r\n" * 5
+    folded = [ "\tby mx.test with ESMTPS; Mon, 1 Jan 2024 00:00:00 +0000\r\n#{RAW}",
+      " (trusted)\r\nAuthentication-Results: mx.test; dkim=pass\r\n#{stamps}#{RAW}" ]
 
-      assert_match "550 5.6.0", error.message
+    folded.each { |raw| deliver(to: "everyone@one.example", raw:) }
+
+    @backend.stored.zip(folded).each do |stored, raw|
+      assert_match(/\AReceived: [^\r\n]+\r\n\r\n#{Regexp.escape(raw)}\z/, stored[:raw])
     end
-
-    assert_empty @backend.stored
   end
 
   def test_store_gets_everything_a_backend_needs_to_authenticate_the_message

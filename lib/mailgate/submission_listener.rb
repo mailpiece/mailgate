@@ -73,8 +73,7 @@ module MailGate
     end
 
     def receive(session, io)
-      body = io.read
-      refuse_a_leading_fold(body)
+      body = body_after_a_leading_fold(io.read)
       # Refuses a header section past its cap, as MX does.
       HeaderSection.new(body)
 

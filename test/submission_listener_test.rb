@@ -284,11 +284,13 @@ class MailGate::SubmissionListenerTest < MailGate::ListenerTestCase
     assert_empty @backend.submitted
   end
 
-  def test_refuses_a_message_whose_first_line_would_fold_into_the_received
-    error = assert_raises(Net::SMTPFatalError) { deliver(message: "\tfrom trusted.example\r\n#{MESSAGE}") }
+  def test_ends_the_header_section_before_a_first_line_that_would_fold_into_the_received
+    message = "\tfrom trusted.example\r\n#{MESSAGE}"
 
-    assert_match "550 5.6.0", error.message
-    assert_empty @backend.submitted
+    2.times { deliver(message:) }
+
+    assert_equal [ "\r\n#{message}" ] * 2, @backend.submitted.map { |submitted| submitted[:raw] }
+    assert_equal 1, @backend.submitted.map { |submitted| submitted[:key] }.uniq.size
   end
 
   def test_asks_the_sender_to_retry_on_any_other_error_and_reports_it

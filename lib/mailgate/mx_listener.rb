@@ -76,8 +76,7 @@ module MailGate
     end
 
     def receive(session, io)
-      body = io.read
-      refuse_a_leading_fold(body)
+      body = body_after_a_leading_fold(io.read)
       raise Errors::LoopDetected, "Loop detected" if looping?(body)
 
       raw = received_header(session) + AuthenticationResults.strip(body)

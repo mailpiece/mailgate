@@ -271,9 +271,9 @@ module MailGate
       end
 
       # A first line opening with a space or tab would continue our Received: stamp, letting the client write the end of
-      # it. No mail starts with a fold, so it is refused rather than rewritten into something the sender never sent.
-      def refuse_a_leading_fold(body)
-        raise Errors::InvalidMessage, "Message starts with a folded line" if body.start_with?(" ", "\t")
+      # it. As in Postfix, an empty line goes before it, so the whole message is body and has no header of its own.
+      def body_after_a_leading_fold(body)
+        body.start_with?(" ", "\t") ? "\r\n#{body}" : body
       end
 
       def received_at
