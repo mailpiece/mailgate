@@ -421,6 +421,7 @@ class MailGate::MxListenerTest < MailGate::ListenerTestCase
     assert_match(/\AReceived: from friendly\.sender\.example \(unknown \[127\.0\.0\.1\]\) by mx\.test with ESMTP; .* \+0000\r\n/, stored[:raw])
     assert_equal 1, stored[:raw][/\AReceived:.*?\r\n/m].count("\n")
     assert_equal "unknown", stored[:envelope].hostname
+    assert_equal "none", stored[:envelope].reverse_dns_status
   end
 
   def test_stamps_and_hands_over_the_forward_confirmed_name
@@ -432,6 +433,18 @@ class MailGate::MxListenerTest < MailGate::ListenerTestCase
     stored = sole(@backend.stored)
     assert_match(/\AReceived: from friendly\.sender\.example \(mail\.sender\.example \[127\.0\.0\.1\]\) by mx\.test /, stored[:raw])
     assert_equal "mail.sender.example", stored[:envelope].hostname
+    assert_equal "confirmed", stored[:envelope].reverse_dns_status
+  end
+
+  def test_stamps_unknown_for_a_name_that_does_not_resolve_back_but_says_so
+    restart_listener(resolver: MailResolver::Testing::FakeResolver.new(
+      "127.0.0.1" => { ptr: [ "forged.example" ] }, "forged.example" => { a: [ "198.51.100.7" ] }))
+
+    deliver(to: "everyone@one.example", helo: "friendly.sender.example")
+
+    stored = sole(@backend.stored)
+    assert_match(/\AReceived: from friendly\.sender\.example \(unknown \[127\.0\.0\.1\]\)/, stored[:raw])
+    assert_equal [ "unknown", "unconfirmed" ], [ stored[:envelope].hostname, stored[:envelope].reverse_dns_status ]
   end
 
   def test_logs_a_temporary_reverse_dns_failure_apart_from_a_missing_name
@@ -440,7 +453,7 @@ class MailGate::MxListenerTest < MailGate::ListenerTestCase
 
     deliver(to: "everyone@one.example")
 
-    assert_equal "unknown", sole(@backend.stored)[:envelope].hostname
+    assert_equal [ "unknown", "temporary_failure" ], sole(@backend.stored)[:envelope].then { [ it.hostname, it.reverse_dns_status ] }
     assert_match(/WARN -- : \[127\.0\.0\.1\] .*Reverse DNS failed temporarily: server failure/, log.string)
     assert_empty @backend.errors
   end
@@ -452,7 +465,7 @@ class MailGate::MxListenerTest < MailGate::ListenerTestCase
     deliver(to: "everyone@one.example")
 
     assert_operator Process.clock_gettime(Process::CLOCK_MONOTONIC) - started, :<, 2
-    assert_equal "unknown", sole(@backend.stored)[:envelope].hostname
+    assert_equal [ "unknown", "temporary_failure" ], sole(@backend.stored)[:envelope].then { [ it.hostname, it.reverse_dns_status ] }
   end
 
   def test_ends_the_lookup_when_the_client_leaves_before_it_is_needed
@@ -477,6 +490,19 @@ class MailGate::MxListenerTest < MailGate::ListenerTestCase
     sleep 0.2
 
     assert_operator resolver.waiting.size, :<=, 10
+  ensure
+    resolver&.answer
+  end
+
+  def test_says_nothing_of_reverse_dns_it_had_no_slot_to_look_up
+    resolver = BlackholeResolver.new
+    restart_listener(resolver:, reverse_dns_timeout: 30, max_connections: 1)
+    connect { |socket| socket.gets }
+    sleep 0.1 until resolver.waiting.size == 1
+
+    deliver(to: "everyone@one.example")
+
+    assert_equal [ "unknown", nil ], sole(@backend.stored)[:envelope].then { [ it.hostname, it.reverse_dns_status ] }
   ensure
     resolver&.answer
   end

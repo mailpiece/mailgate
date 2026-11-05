@@ -225,7 +225,7 @@ module MailGate
       def envelope_of(session)
         Envelope.new(ip: session.remote_ip, hostname: client_hostname(session), helo: session.helo, mail_from: session.envelope.from,
           rcpt_to: recipients_of(session), tls_version: session.tls_version, tls_cipher: session.tls_cipher,
-          queue_id: session.queue_id)
+          queue_id: session.queue_id, reverse_dns_status: reverse_dns_status(session))
       end
 
       def recipients_of(session)
@@ -238,6 +238,18 @@ module MailGate
           session.reverse_dns.result.tap { |result| reverse_dns_finished(session, result) }.name
         else
           ReverseDns::UNKNOWN
+        end
+      end
+
+      # Apart from the name, so a scorer can tell a lookup that failed from a client with no name. nil when not looked up,
+      # busy included: a client holding every slot would otherwise make each one look like a DNS failure.
+      def reverse_dns_status(session)
+        case session.reverse_dns&.result&.outcome
+        when nil, :busy then nil
+        when :verified then "confirmed"
+        when :unconfirmed then "unconfirmed"
+        when :not_found then "none"
+        else "temporary_failure"
         end
       end
 

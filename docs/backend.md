@@ -68,8 +68,12 @@ committed, and a sender can send the same message again on another connection.
 - `digest` is a SHA-256 of the sender and the body, the same for a retry of the same message. Use it to store
   a retry once.
 - `envelope` is a `MailGate::Envelope`: `ip`, `hostname`, `helo`, `mail_from`, `rcpt_to`, `tls_version`,
-  `tls_cipher`, `queue_id`. `hostname` is the client's forward-confirmed reverse DNS name, or `unknown`.
-  `queue_id` is a short id for the message, the same one mailgate's log lines carry.
+  `tls_cipher`, `queue_id`, `reverse_dns_status`. `hostname` is the client's forward-confirmed reverse DNS name,
+  or `unknown`. `reverse_dns_status` says how that lookup went: `"confirmed"`, `"unconfirmed"` when the PTR name
+  does not resolve back to the client, `"none"` without a PTR, or `"temporary_failure"` when DNS failed or timed
+  out; pass it on to a scorer so a DNS failure is not taken for a client with no name. It is `nil` when nothing
+  was looked up, as when `max_connections` lookups were already running, so a scorer can look the client up
+  itself. `queue_id` is a short id for the message, the same one mailgate's log lines carry.
 - `verdict` is the [scorer](scorer.md)'s verdict, or `nil` when there is no scorer or the message went
   unscored. Marking or rewriting the subject on its action is up to the backend.
 
@@ -108,8 +112,8 @@ At MAIL FROM, once for each message. True gets a 452.
 
 After DATA. Accept the message for sending and return once it is committed.
 
-- `envelope` is a `MailGate::Envelope`, as `store` gets it, but with `hostname` always `unknown`: submission
-  looks up no reverse DNS, as its `Received:` never names the client.
+- `envelope` is a `MailGate::Envelope`, as `store` gets it, but with `hostname` always `unknown` and
+  `reverse_dns_status` `nil`: submission looks up no reverse DNS, as its `Received:` never names the client.
 - `raw` is the message as submitted, with an empty line before a first line that opens with a space or tab, as
   `store` gets it. Check the identity headers (From, Sender) here as well as the envelope sender.
 - `received` is mailgate's `Received:` line. Put it on top after removing the client's own `Received:`
