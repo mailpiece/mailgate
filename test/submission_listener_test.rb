@@ -48,6 +48,7 @@ class MailGate::SubmissionListenerTest < MailGate::ListenerTestCase
     assert_equal 20, listener.instance_variable_get(:@max_tls_sessions_per_ip)
     assert_equal 20, listener.instance_variable_get(:@max_auth_attempts_per_ip)
     assert_equal 1.0, listener.instance_variable_get(:@stress_threshold)
+    assert_equal 180, listener.instance_variable_get(:@read_timeout)
   end
 
   def test_overrides_each_default

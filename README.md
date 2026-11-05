@@ -114,7 +114,7 @@ Only `backend` is required. `nil` turns off the ones mailsmtp lets you turn off.
 | `stress_threshold` | 1.0 | 1.0 | share of `max_connections` past which limits tighten; 1.0 is when every connection slot is taken |
 | `scorer` | `nil` | — | optional |
 | `scan_budget` | 8 | — | seconds the session waits for the scorer, mailscore's own; used only with a scorer |
-| `read_timeout` | 30 | 30 | seconds idle before the connection drops |
+| `read_timeout` | 180 | 180 | seconds idle before the connection drops |
 | `max_processings_wait` | 30 | 30 | seconds a connection waits for a free `max_processings` slot before a 421 |
 | `max_session_duration` | 300 | 300 | seconds a connection may last, and so the longest a body trickled in just above mailsmtp's minimum data rate holds a processing slot |
 | `pending_input_limit` | 65536 | 65536 | bytes buffered ahead of a reply |

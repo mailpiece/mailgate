@@ -20,7 +20,7 @@ module MailGate
       max_tls_sessions_per_ip: nil,
       # Limits tighten once every connection slot is taken.
       stress_threshold: 1.0,
-      read_timeout: 30,
+      read_timeout: 180,
       max_processings_wait: 30,
       # A body trickled just above mailsmtp's minimum rate holds its processing slot until this ends the session.
       max_session_duration: 300,

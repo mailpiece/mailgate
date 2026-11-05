@@ -76,6 +76,7 @@ class MailGate::MxListenerTest < MailGate::ListenerTestCase
     assert_nil listener.instance_variable_get(:@max_messages_per_ip)
     assert_nil listener.instance_variable_get(:@max_tls_sessions_per_ip)
     assert_equal 1.0, listener.instance_variable_get(:@stress_threshold)
+    assert_equal 180, listener.instance_variable_get(:@read_timeout)
     assert_equal 8, listener.instance_variable_get(:@scan_budget)
   end
 
