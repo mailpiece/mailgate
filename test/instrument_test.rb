@@ -161,7 +161,7 @@ class MailGate::InstrumentTest < MailGate::ListenerTestCase
 
     with_encrypted_session do |ssl|
       command ssl, "AUTH PLAIN #{credential(TOKEN)}"
-      assert_match(/\A452/, command(ssl, "MAIL FROM:<sender@example.com>"))
+      assert_match(/\A450/, command(ssl, "MAIL FROM:<sender@example.com>"))
     end
 
     assert_equal [ { ip: "127.0.0.1", limit: :account } ], all(:rate_limited)

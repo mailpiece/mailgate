@@ -7,3 +7,4 @@
 - Accept a message that starts with a folded line, as body, as Postfix does
 - Look up no reverse DNS on submission
 - Check the sender before the rate limit at MAIL FROM, so a refused sender costs no quota
+- Refuse a rate-limited account with a 450 4.7.1, not a 452 for full storage

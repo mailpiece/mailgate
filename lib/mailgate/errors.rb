@@ -13,8 +13,9 @@ module MailGate
       status 451, "Requested action aborted: local error in processing", enhanced: "4.3.0"
     end
 
+    # MailSmtp::RateLimited's code and status in its own words; not that class, which the listener counts per IP.
     class RateLimited < MailSmtp::Error
-      status 452, "Requested action not taken: insufficient system storage", enhanced: "4.7.0"
+      status 450, "Requested mail action not taken: too many messages, try again later", enhanced: "4.7.1"
     end
 
     class StorageFull < MailSmtp::Error
