@@ -225,7 +225,8 @@ module MailGate
       def envelope_of(session)
         Envelope.new(ip: session.remote_ip, hostname: client_hostname(session), helo: session.helo, mail_from: session.envelope.from,
           rcpt_to: recipients_of(session), tls_version: session.tls_version, tls_cipher: session.tls_cipher,
-          queue_id: session.queue_id, reverse_dns_status: reverse_dns_status(session))
+          queue_id: session.queue_id, reverse_dns_status: reverse_dns_status(session),
+          unconfirmed_hostname: session.reverse_dns&.result&.unconfirmed_name)
       end
 
       def recipients_of(session)

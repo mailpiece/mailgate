@@ -15,7 +15,8 @@ storage, accounts and tokens, and your scorer for spam.
 - loop detection on its own `Received:` stamps
 - forward-confirmed reverse DNS on MX, started off the connection thread once the client has waited for the
   banner, in `Received:` and the envelope, with no more lookups at once than `max_connections`; the envelope's
-  `reverse_dns_status` tells a DNS failure from a client with no name
+  `reverse_dns_status` tells a DNS failure from a client with no name, and `unconfirmed_hostname` keeps a PTR
+  name that does not resolve back, for negative checks only
 - a banner held back on MX, refusing a client that talks first
 - an error tarpit: a pause before each error reply past a soft limit, a 421 at the hard limit
 - every option but the backend has a default

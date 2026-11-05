@@ -434,9 +434,10 @@ class MailGate::MxListenerTest < MailGate::ListenerTestCase
     assert_match(/\AReceived: from friendly\.sender\.example \(mail\.sender\.example \[127\.0\.0\.1\]\) by mx\.test /, stored[:raw])
     assert_equal "mail.sender.example", stored[:envelope].hostname
     assert_equal "confirmed", stored[:envelope].reverse_dns_status
+    assert_nil stored[:envelope].unconfirmed_hostname
   end
 
-  def test_stamps_unknown_for_a_name_that_does_not_resolve_back_but_says_so
+  def test_stamps_unknown_for_a_name_that_does_not_resolve_back_but_hands_it_over_apart
     restart_listener(resolver: MailResolver::Testing::FakeResolver.new(
       "127.0.0.1" => { ptr: [ "forged.example" ] }, "forged.example" => { a: [ "198.51.100.7" ] }))
 
@@ -445,6 +446,7 @@ class MailGate::MxListenerTest < MailGate::ListenerTestCase
     stored = sole(@backend.stored)
     assert_match(/\AReceived: from friendly\.sender\.example \(unknown \[127\.0\.0\.1\]\)/, stored[:raw])
     assert_equal [ "unknown", "unconfirmed" ], [ stored[:envelope].hostname, stored[:envelope].reverse_dns_status ]
+    assert_equal "forged.example", stored[:envelope].unconfirmed_hostname
   end
 
   def test_logs_a_temporary_reverse_dns_failure_apart_from_a_missing_name

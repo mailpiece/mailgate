@@ -19,7 +19,7 @@ Called once a message, after DATA, before anything is stored. One verdict covers
 
 - `raw` is the message as it will be stored.
 - `envelope` is a `MailGate::Envelope`: `ip`, `hostname`, `helo`, `mail_from`, `rcpt_to`, `tls_version`,
-  `tls_cipher`, `queue_id`, `reverse_dns_status`, as the [backend](backend.md#storeroute-rcpt_to-raw-digest-envelope-verdict) gets it.
+  `tls_cipher`, `queue_id`, `reverse_dns_status`, `unconfirmed_hostname`, as the [backend](backend.md#storeroute-rcpt_to-raw-digest-envelope-verdict) gets it.
 - `budget` is `scan_budget`.
 
 The verdict responds to `action`, one of these:
