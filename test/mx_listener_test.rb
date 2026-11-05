@@ -501,6 +501,7 @@ class MailGate::MxListenerTest < MailGate::ListenerTestCase
     restart_listener(resolver:, reverse_dns_timeout: 30, max_connections: 1)
     connect { |socket| socket.gets }
     sleep 0.1 until resolver.waiting.size == 1
+    sleep 0.01 while @listener.connections?
 
     deliver(to: "everyone@one.example")
 
