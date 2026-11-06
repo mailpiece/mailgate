@@ -76,13 +76,16 @@ class MailGate::MxListenerTest < MailGate::ListenerTestCase
     assert_nil listener.instance_variable_get(:@max_messages_per_ip)
     assert_nil listener.instance_variable_get(:@max_tls_sessions_per_ip)
     assert_equal 1.0, listener.instance_variable_get(:@stress_threshold)
+    assert_equal 180, listener.instance_variable_get(:@read_timeout)
+    assert_equal 30, listener.instance_variable_get(:@data_rate_grace)
     assert_equal 8, listener.instance_variable_get(:@scan_budget)
   end
 
   def test_overrides_each_default
     listener = MailGate::MxListener.new(backend: @backend, hostname: "mx.example", host: "127.0.0.1", port: 2525,
       max_message_size: 5_000, max_recipients: 50, max_processings: 3, max_connections: 20, max_connections_per_ip: 4,
-      max_messages_per_ip: 30, max_tls_sessions_per_ip: 60, stress_threshold: 0.8, scorer: Object.new, scan_budget: 2)
+      max_messages_per_ip: 30, max_tls_sessions_per_ip: 60, stress_threshold: 0.8, read_timeout: 60, data_rate_grace: 10,
+      scorer: Object.new, scan_budget: 2)
 
     assert_equal "mx.example", listener.hostname
     assert_equal [ [ "127.0.0.1", 2525 ] ], listener.instance_variable_get(:@addresses)
@@ -95,6 +98,8 @@ class MailGate::MxListenerTest < MailGate::ListenerTestCase
     assert_equal 30, listener.instance_variable_get(:@max_messages_per_ip)
     assert_equal 60, listener.instance_variable_get(:@max_tls_sessions_per_ip)
     assert_equal 0.8, listener.instance_variable_get(:@stress_threshold)
+    assert_equal 60, listener.instance_variable_get(:@read_timeout)
+    assert_equal 10, listener.instance_variable_get(:@data_rate_grace)
     assert_equal 2, listener.instance_variable_get(:@scan_budget)
   end
 

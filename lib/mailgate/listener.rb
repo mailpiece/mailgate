@@ -20,7 +20,9 @@ module MailGate
       max_tls_sessions_per_ip: nil,
       # Limits tighten once every connection slot is taken.
       stress_threshold: 1.0,
-      read_timeout: 30,
+      read_timeout: 180,
+      # How long DATA may run before mailsmtp's minimum data rate applies, so a trickled body is cut off early.
+      data_rate_grace: 30,
       max_processings_wait: 30,
       # A body trickled just above mailsmtp's minimum rate holds its processing slot until this ends the session.
       max_session_duration: 300,
@@ -47,6 +49,7 @@ module MailGate
 
     # The engine refuses a recipient cap under 100 (RFC 5321 §4.5.3.1), so a lower one is held in rcpt_to.
     def initialize(backend:, hostname:, max_recipients:, read_timeout: DEFAULTS[:read_timeout],
+      data_rate_grace: DEFAULTS[:data_rate_grace],
       max_processings_wait: DEFAULTS[:max_processings_wait], max_session_duration: DEFAULTS[:max_session_duration],
       pending_input_limit: DEFAULTS[:pending_input_limit], max_junk_commands: DEFAULTS[:max_junk_commands],
       resolver: nil, reverse_dns_timeout: nil, greet_wait: DEFAULTS[:greet_wait],
@@ -61,7 +64,7 @@ module MailGate
       @greet_wait = greet_wait
 
       super(tls: backend.tls, max_recipients: [ max_recipients, MAX_RECIPIENTS ].max,
-        read_timeout:, max_processings_wait:, max_session_duration:, pending_input_limit:, max_junk_commands:,
+        read_timeout:, data_rate_grace:, max_processings_wait:, max_session_duration:, pending_input_limit:, max_junk_commands:,
         error_sleep_time:, error_sleep_after: soft_error_limit, max_exceptions: hard_error_limit,
         **options)
 

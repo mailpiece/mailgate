@@ -25,6 +25,7 @@ module MailGate
       max_connections_per_ip: DEFAULTS[:max_connections_per_ip], max_messages_per_ip: DEFAULTS[:max_messages_per_ip],
       max_tls_sessions_per_ip: DEFAULTS[:max_tls_sessions_per_ip],
       stress_threshold: DEFAULTS[:stress_threshold], read_timeout: DEFAULTS[:read_timeout],
+      data_rate_grace: DEFAULTS[:data_rate_grace],
       max_processings_wait: DEFAULTS[:max_processings_wait], max_session_duration: DEFAULTS[:max_session_duration],
       pending_input_limit: DEFAULTS[:pending_input_limit], max_junk_commands: DEFAULTS[:max_junk_commands],
       resolver: DEFAULTS[:resolver], reverse_dns_timeout: DEFAULTS[:reverse_dns_timeout], greet_wait: DEFAULTS[:greet_wait],
@@ -38,7 +39,7 @@ module MailGate
 
       super(backend:, hostname:, host:, port:, max_message_size:, max_recipients:, max_processings:, max_processings_per_ip:,
         max_connections:, max_connections_per_ip:, max_messages_per_ip:, max_tls_sessions_per_ip:, stress_threshold:,
-        read_timeout:, max_processings_wait:, max_session_duration:, pending_input_limit:, max_junk_commands:, resolver:, reverse_dns_timeout:, greet_wait:,
+        read_timeout:, data_rate_grace:, max_processings_wait:, max_session_duration:, pending_input_limit:, max_junk_commands:, resolver:, reverse_dns_timeout:, greet_wait:,
         error_sleep_time:, soft_error_limit:, hard_error_limit:, instrument:,
         logger:, logger_severity:,
         auth: :disabled,
