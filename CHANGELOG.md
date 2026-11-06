@@ -9,3 +9,4 @@
 - Check the sender before the rate limit at MAIL FROM, so a refused sender costs no quota
 - Refuse a rate-limited account with a 450 4.7.1, not a 452 for full storage
 - Drop an idle client after 3 minutes, not 30 seconds
+- Add `data_rate_grace`, 30 seconds before a slow DATA must keep up the minimum rate

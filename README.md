@@ -115,6 +115,7 @@ Only `backend` is required. `nil` turns off the ones mailsmtp lets you turn off.
 | `scorer` | `nil` | — | optional |
 | `scan_budget` | 8 | — | seconds the session waits for the scorer, mailscore's own; used only with a scorer |
 | `read_timeout` | 180 | 180 | seconds idle before the connection drops |
+| `data_rate_grace` | 30 | 30 | seconds DATA may run before mailsmtp's minimum data rate applies, so a body trickled in slowly is dropped early |
 | `max_processings_wait` | 30 | 30 | seconds a connection waits for a free `max_processings` slot before a 421 |
 | `max_session_duration` | 300 | 300 | seconds a connection may last, and so the longest a body trickled in just above mailsmtp's minimum data rate holds a processing slot |
 | `pending_input_limit` | 65536 | 65536 | bytes buffered ahead of a reply |
