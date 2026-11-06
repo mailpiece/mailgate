@@ -102,7 +102,7 @@ At MAIL FROM. False gets a 550.
 
 ### `rate_limited?(id) → boolean`
 
-At MAIL FROM, once for each message. True gets a 452.
+At MAIL FROM, once for each message. True gets a 450 4.7.1.
 
 ### `submit(id, raw:, received:, envelope:, key:)`
 

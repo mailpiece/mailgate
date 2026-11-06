@@ -40,7 +40,7 @@ back, and `:temporary_failure` for anything else: a DNS failure, a timeout, a re
 
 For `:rate_limited`, `limit` is `:messages_per_ip` (450 at MAIL FROM), `:tls_sessions_per_ip` (454 at
 STARTTLS) or `:auth_attempts_per_ip` (454 at AUTH), `:processings_per_ip` (451 at DATA), or `:account` for the
-submission backend's `rate_limited?` (452 at MAIL FROM).
+submission backend's `rate_limited?` (450 at MAIL FROM).
 
 `:connection_refused` at `:max_connections` is sent from the accepting thread, before there is a connection
 thread or a session; behind PROXY its `ip` is the proxy's, and it is nil when the client was already gone. Its
