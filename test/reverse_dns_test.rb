@@ -87,6 +87,19 @@ class MailGate::ReverseDnsTest < MailGate::TestCase
     assert_equal [ "unknown", :unconfirmed ], outcome(resolver, "192.0.2.3")
   end
 
+  def test_keeps_a_well_formed_name_that_does_not_resolve_back_apart
+    resolver = FakeResolver.new("192.0.2.1" => { ptr: [ "Forged.Example." ] }, "forged.example" => { a: [ "198.51.100.7" ] },
+      "192.0.2.2" => { ptr: [ "bad name (x [1.2.3.4])" ] },
+      "192.0.2.3" => { ptr: [ "mail.example.com" ] }, "mail.example.com" => { a: [ "192.0.2.3" ] },
+      "192.0.2.4" => { ptr: [ "localhost" ] }, "192.0.2.5" => { ptr: [ "host_1.example" ] })
+
+    assert_equal "forged.example", MailGate::ReverseDns.new(resolver, "192.0.2.1", timeout: 1).result.unconfirmed_name
+    assert_nil MailGate::ReverseDns.new(resolver, "192.0.2.2", timeout: 1).result.unconfirmed_name
+    assert_nil MailGate::ReverseDns.new(resolver, "192.0.2.3", timeout: 1).result.unconfirmed_name
+    assert_nil MailGate::ReverseDns.new(resolver, "192.0.2.4", timeout: 1).result.unconfirmed_name
+    assert_nil MailGate::ReverseDns.new(resolver, "192.0.2.5", timeout: 1).result.unconfirmed_name
+  end
+
   def test_is_unknown_on_a_temporary_failure_but_says_so
     resolver = FakeResolver.new("192.0.2.1" => { ptr: :servfail }, "192.0.2.2" => { ptr: :timeout },
       "192.0.2.3" => { ptr: [ "flaky.example" ] }, "flaky.example" => { a: :servfail })

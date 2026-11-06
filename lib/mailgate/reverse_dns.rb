@@ -8,11 +8,19 @@ module MailGate
   class ReverseDns
     UNKNOWN = "unknown"
     HOSTNAME = /\A(?=.{1,253}\z)[A-Za-z0-9_](?:[A-Za-z0-9_-]*[A-Za-z0-9])?(?:\.[A-Za-z0-9_](?:[A-Za-z0-9_-]*[A-Za-z0-9])?)*\z/
+    # A full host name, dotted, with no underscore: the only unconfirmed name worth handing a scorer.
+    FQDN = /\A(?=.{1,253}\z)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?\z/
 
     # +outcome+ is :verified, :not_found, :unconfirmed, :temporary_failure, :timeout, :error, or :busy when every slot
     # was taken.
     # +duration+ is the seconds the lookup took.
-    Result = Data.define(:name, :outcome, :error, :duration)
+    # +unconfirmed_name+ is the PTR name that did not resolve back, when a full host name, which the client chose:
+    # never trust it.
+    Result = Data.define(:name, :outcome, :error, :duration, :unconfirmed_name) do
+      def initialize(unconfirmed_name: nil, **)
+        super
+      end
+    end
 
     # No time left for another query, or the client is gone.
     Expired = Class.new(StandardError)
@@ -67,7 +75,7 @@ module MailGate
         elsif resolves_to?(name, address)
           finished(name, :verified)
         else
-          finished(UNKNOWN, :unconfirmed)
+          finished(UNKNOWN, :unconfirmed, unconfirmed_name: (name if name.match?(FQDN)))
         end
       rescue MailResolver::NotFound, IPAddr::Error
         finished(UNKNOWN, :not_found)
@@ -103,8 +111,8 @@ module MailGate
         MailResolver::Resolver::TIMEOUTS.map { it * scale }
       end
 
-      def finished(name, outcome, error = nil)
-        Result.new(name, outcome, error, monotonic_time - @started)
+      def finished(name, outcome, error = nil, unconfirmed_name: nil)
+        Result.new(name, outcome, error, monotonic_time - @started, unconfirmed_name)
       end
 
       def monotonic_time
