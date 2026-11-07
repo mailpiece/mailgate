@@ -98,6 +98,8 @@ class MailGate::SubmissionListenerTest < MailGate::ListenerTestCase
     deliver
 
     assert_equal "unknown", sole(@backend.submitted)[:envelope].hostname
+    assert_nil sole(@backend.submitted)[:envelope].reverse_dns_status
+    assert_nil sole(@backend.submitted)[:envelope].unconfirmed_hostname
     assert_nil @listener.instance_variable_get(:@reverse_dns_timeout)
   end
 
