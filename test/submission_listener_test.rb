@@ -247,7 +247,7 @@ class MailGate::SubmissionListenerTest < MailGate::ListenerTestCase
 
       @backend.inactive = false
       @backend.rate_limited = true
-      assert_match(/\A452 4\.7\.0 /, command(ssl, "MAIL FROM:<sender@example.com>"))
+      assert_match(/\A450 4\.7\.1 /, command(ssl, "MAIL FROM:<sender@example.com>"))
     end
 
     assert_empty @backend.submitted
@@ -265,12 +265,12 @@ class MailGate::SubmissionListenerTest < MailGate::ListenerTestCase
       @backend.calls.map(&:first).drop_while { |call| call != :account_active? }
   end
 
-  def test_refuses_a_rate_limited_account_with_a_452
+  def test_refuses_a_rate_limited_account_with_a_450
     @backend.rate_limited = true
 
     error = assert_raises(Net::SMTPServerBusy) { deliver }
 
-    assert_match "452", error.message
+    assert_match "450 4.7.1", error.message
     assert_empty @backend.submitted
   end
 
