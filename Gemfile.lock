@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/mailpiece/mailresolver.git
-  revision: ed45ec0f81d2bc7cda710c9da1cbb08eb927f5fe
+  revision: 76c3062e16fec31db84ce54a2c970820cfa2f126
   branch: main
   specs:
     mailresolver (0.6.0)
@@ -8,7 +8,7 @@ GIT
 
 GIT
   remote: https://github.com/mailpiece/mailsmtp.git
-  revision: f63e6070f4238e7f2c1134dd416a757447140035
+  revision: 914270cf46f8b1731709afdd221313832b36ee28
   branch: main
   specs:
     mailsmtp (0.7.0)
